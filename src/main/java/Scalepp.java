@@ -6,9 +6,10 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
-public class Scalep {
+public class Scalepp {
 
 
     static ArrayList<Partition> topicpartitions1 = new ArrayList<>();
@@ -18,7 +19,7 @@ public class Scalep {
     static double dynamicAverageMaxConsumptionRate = 0.0;
     static double wsla = 5.0;
     static List<Consumer> assignment = new ArrayList<>();
-    private static final Logger log = LogManager.getLogger(Scalep.class);
+    private static final Logger log = LogManager.getLogger(Scalepp.class);
 
 
 
@@ -58,8 +59,8 @@ public class Scalep {
     private static int binPackAndScale() {
         log.info("Inside binPackAndScale ");
         List<Consumer> consumers = new ArrayList<>();
-        int consumerCount = 0;
-        List<Partition> parts = new ArrayList<>(topicpartitions1);
+        int consumerCount = 1;
+        List<Partition> parts = new ArrayList<>(Scalep.topicpartitions1);
         dynamicAverageMaxConsumptionRate = 175;
 
         long maxLagCapacity;
@@ -87,32 +88,41 @@ public class Scalep {
         }
         //start the bin pack FFD with sort
         Collections.sort(parts, Collections.reverseOrder());
-        Consumer consumer = null;
+
+        Consumer consumer;
+
+
         for (Partition partition : parts) {
-            for (Consumer cons : consumers) {
+            int i;
+            for ( i = 0; i < consumerCount; i++) {
                 //TODO externalize these choices on the inout to the FFD bin pack
                 // TODO  hey stupid use instatenous lag instead of average lag.
                 // TODO average lag is a decision on past values especially for long DI.
-                if (cons.getRemainingLagCapacity() >=  partition.getLag()  &&
-                        cons.getRemainingArrivalCapacity() >= partition.getArrivalRate()) {
-                    cons.assignPartition(partition);
+
+                if ( consumers.get(i).getRemainingLagCapacity() >=  partition.getLag()  &&
+                        consumers.get(i).getRemainingArrivalCapacity() >= partition.getArrivalRate()) {
+                    consumers.get(i).assignPartition(partition);
                     // we are done with this partition, go to next
+                    log.info("i {}", i);
+                    log.info("consumerCount {}", consumerCount);
+
                     break;
                 }
                 //we have iterated over all the consumers hoping to fit that partition, but nope
                 //we shall create a new consumer i.e., scale up
-                if (cons == consumers.get(consumers.size() - 1)) {
-                    consumerCount++;
-                    consumer = new Consumer((String.valueOf(consumerCount)), (long) (dynamicAverageMaxConsumptionRate * wsla),
-                            dynamicAverageMaxConsumptionRate);
-                    consumer.assignPartition(partition);
+
                 }
-            }
-            if (consumer != null) {
+            if (i==consumerCount ) {
+                consumerCount++;
+                consumer = new Consumer((String.valueOf(consumerCount)), (long) (dynamicAverageMaxConsumptionRate * wsla),
+                        dynamicAverageMaxConsumptionRate);
                 consumers.add(consumer);
-                consumer = null;
+                consumers.get(i).assignPartition(partition);
+
             }
+
         }
+        log.info(consumers);
         log.info(" The BP up scaler recommended {}", consumers.size());
         return consumers.size();
     }
@@ -122,10 +132,10 @@ public class Scalep {
 
 
     private static int binPackAndScaled() {
-        log.info("Inside binPackAndScale ");
+        log.info("Inside binPackAndScaled ");
         List<Consumer> consumers = new ArrayList<>();
-        int consumerCount = 0;
-        List<Partition> parts = new ArrayList<>(topicpartitions1);
+        int consumerCount = 1;
+        List<Partition> parts = new ArrayList<>(Scalep.topicpartitions1);
         dynamicAverageMaxConsumptionRate = 175*0.6;
 
         long maxLagCapacity;
@@ -154,32 +164,38 @@ public class Scalep {
         }
         //start the bin pack FFD with sort
         Collections.sort(parts, Collections.reverseOrder());
-        Consumer consumer = null;
+        Consumer consumer;
         for (Partition partition : parts) {
-            for (Consumer cons : consumers) {
+            int i;
+            for ( i = 0; i < consumerCount; i++) {
                 //TODO externalize these choices on the inout to the FFD bin pack
                 // TODO  hey stupid use instatenous lag instead of average lag.
                 // TODO average lag is a decision on past values especially for long DI.
-                if (cons.getRemainingLagCapacity() >=  partition.getLag()  &&
-                        cons.getRemainingArrivalCapacity() >= partition.getArrivalRate()) {
-                    cons.assignPartition(partition);
+                //log.info("hi");
+                log.info("i {}", i );
+
+                if ( consumers.get(i).getRemainingLagCapacity() >=  partition.getLag()  &&
+                        consumers.get(i).getRemainingArrivalCapacity() >= partition.getArrivalRate()) {
+                    consumers.get(i).assignPartition(partition);
                     // we are done with this partition, go to next
+                    log.info("i {}", i);
+                    log.info("consumerCount {}", consumerCount);
                     break;
                 }
                 //we have iterated over all the consumers hoping to fit that partition, but nope
                 //we shall create a new consumer i.e., scale up
-                if (cons == consumers.get(consumers.size() - 1)) {
-                    consumerCount++;
-                    consumer = new Consumer((String.valueOf(consumerCount)), (long) (dynamicAverageMaxConsumptionRate * wsla),
-                            dynamicAverageMaxConsumptionRate);
-                    consumer.assignPartition(partition);
-                }
+
+
             }
-            if (consumer != null) {
+            if(i == consumerCount) {
+                consumerCount++;
+                consumer = new Consumer((String.valueOf(consumerCount)), maxLagCapacity,
+                        dynamicAverageMaxConsumptionRate);
+                consumer.assignPartition(partition);
                 consumers.add(consumer);
-                consumer = null;
             }
         }
+
         log.info(" The BP down scaler recommended {}", consumers.size());
         log.info("===================================");
         return consumers.size();

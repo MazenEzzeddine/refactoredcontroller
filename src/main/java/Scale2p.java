@@ -37,13 +37,10 @@ public class Scale2p {
         }
         else {
             int neededsized = binPackAndScaled();
-
             int replicasForscaled =  currentsize -neededsized;
-
 
             if(replicasForscaled>0) {
                 log.info("We have to downscale  group2 by {}", replicasForscaled);
-
                 size= neededsized;
                 try (final KubernetesClient k8s = new DefaultKubernetesClient()) {
                     k8s.apps().deployments().inNamespace("default").withName("cons1persec2").scale(neededsized);

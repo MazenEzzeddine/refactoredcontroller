@@ -15,6 +15,8 @@ public class Main {
             ArrivalRates.topicpartitions4.add(new Partition(i, 0, 0));
             ArrivalRates.topicpartitions3.add(new Partition(i, 0, 0));
             Scalep.topicpartitions1.add(new Partition(i, 0, 0));
+            Scalepp.topicpartitions1.add(new Partition(i, 0, 0));
+
             Scale2p.topicpartitions2.add(new Partition(i, 0, 0));
             Scale5p.topicpartitions5.add(new Partition(i, 0, 0));
             Scale5p.topicpartitions5avg.add(new Partition(i, 0, 0));
@@ -47,7 +49,7 @@ public class Main {
 
         if (Duration.between(Scalep.lastUpScaleDecision, Instant.now()).getSeconds() > 15) {
             //QueryRate.queryConsumerGroup();
-            Scalep.scaleAsPerBinPack(Scalep.size);
+            Scalepp.scaleAsPerBinPack(Scalep.size);
         }
 
         if (Duration.between(Scale2p.lastUpScaleDecision, Instant.now()).getSeconds() > 15) {
